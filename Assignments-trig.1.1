@@ -1,0 +1,231 @@
+MariaDB [(none)]> DROP DATABASE IF EXISTS x15triggers;
+Query OK, 0 rows affected, 1 warning (0.00 sec)
+
+MariaDB [(none)]>
+MariaDB [(none)]> CREATE DATABASE x15triggers;
+Query OK, 1 row affected (0.00 sec)
+
+MariaDB [(none)]> USE x15triggers;
+Database changed
+MariaDB [x15triggers]> create table student (
+    ->     firstname varchar(40),
+    ->     surname varchar(40),
+    ->     email varchar(40) NOT NULL,
+    ->     id integer NOT NULL,
+    ->     primary key(id)
+    -> );
+Query OK, 0 rows affected (0.22 sec)
+
+MariaDB [x15triggers]> create table course (
+    ->         course varchar(12) not null,
+    ->         ects int not null,
+    ->         primary key(course)
+    -> );
+Query OK, 0 rows affected (0.20 sec)
+
+MariaDB [x15triggers]> create table achieves (
+    ->     course varchar(12) not null,
+    ->     grade int check (grade in (-3, 0, 2, 4, 7, 10, 12)),
+    ->     revised datetime not null,
+    ->     initials varchar(8) not null,
+    ->     id integer not null,
+    ->     primary key(course, id),
+    ->     foreign key(id) references student(id),
+    ->     foreign key(course) references course(course)
+    -> );
+Query OK, 0 rows affected (0.29 sec)
+
+MariaDB [x15triggers]> insert into student values('Abel','Anderson','a@a.dk',1);
+Query OK, 1 row affected (0.08 sec)
+
+MariaDB [x15triggers]> insert into student values('Bent','Bertramsen','b@a.dk',2);
+Query OK, 1 row affected (0.04 sec)
+
+MariaDB [x15triggers]> insert into student values('Chuck','Czechia','c@a.dk',3);
+Query OK, 1 row affected (0.06 sec)
+
+MariaDB [x15triggers]> insert into student values('Dan','Dontspell','d@a.dk',4);
+Query OK, 1 row affected (0.03 sec)
+
+MariaDB [x15triggers]> insert into student values('Erwin','Either','e@a.dk',5);
+Query OK, 1 row affected (0.02 sec)
+
+MariaDB [x15triggers]> insert into student values('Fran','Fantasia','f@a.dk',6);
+Query OK, 1 row affected (0.01 sec)
+
+MariaDB [x15triggers]> insert into student values('Gloria','Glamour','g@a.dk',7);
+Query OK, 1 row affected (0.02 sec)
+
+MariaDB [x15triggers]> insert into student values('Henny','Hello','h@a.dk',8);
+Query OK, 1 row affected (0.01 sec)
+
+MariaDB [x15triggers]> insert into student values('Ignaz','Introvert','i@a.dk',9);
+Query OK, 1 row affected (0.01 sec)
+
+MariaDB [x15triggers]> insert into student values('Jane','Jordan','j@a.dk',10);
+Query OK, 1 row affected (0.02 sec)
+
+MariaDB [x15triggers]> insert into student values('Kelly','Krimer','k@a.dk',11);
+Query OK, 1 row affected (0.02 sec)
+
+MariaDB [x15triggers]>
+MariaDB [x15triggers]> insert into course values('dbxml', 10);
+Query OK, 1 row affected (0.01 sec)
+
+MariaDB [x15triggers]> insert into course values('idefix', 5);
+Query OK, 1 row affected (0.01 sec)
+
+MariaDB [x15triggers]> insert into course values('swkon', 10);
+Query OK, 1 row affected (0.01 sec)
+
+MariaDB [x15triggers]>
+MariaDB [x15triggers]> insert into achieves values('dbxml', 10, current_timestamp, 'nml', 1);
+Query OK, 1 row affected (0.01 sec)
+
+MariaDB [x15triggers]> insert into achieves values('dbxml', 4, current_timestamp, 'nml', 8);
+Query OK, 1 row affected (0.02 sec)
+
+MariaDB [x15triggers]> insert into achieves values('dbxml', 12, current_timestamp, 'nml', 9);
+Query OK, 1 row affected (0.04 sec)
+
+MariaDB [x15triggers]> create table logtable (
+    ->       lid integer NOT NULL,
+    ->       course varchar(40),
+    ->       id integer NOT NULL,
+    ->       comment varchar(40) NOT NULL,
+    ->       oldrevised varchar(40) NOT NULL,
+    ->       newrevised varchar(40) NOT NULL,
+    ->       primary key(lid),
+    ->       foreign key (id) references achieves(id)
+    -> );
+Query OK, 0 rows affected (0.25 sec)
+
+MariaDB [x15triggers]> DELIMITER $$
+MariaDB [x15triggers]> create trigger x15
+    -> before insert on logtable
+    -> for each row
+    -> begin
+    ->    set @x = 'Student grade was updated';
+    -> end;$$
+Query OK, 0 rows affected (0.31 sec)
+
+MariaDB [x15triggers]> insert into logtable (course, id, oldrevised) values ('dbxml', 1, '2018-11-13 22:16:39');
+    ->
+    -> $$
+Query OK, 0 rows affected (0.30 sec)
+
+MariaDB [x15triggers]> INSERT INTO `logtable` (`lid`, `course`, `id`, `comment`, `oldrevised`, `newrevised`) VALUES ('', 'dbxml', '', '', '2018-11-13 22:16:39', CURRENT_TIMESTAMP);
+    -> $$
+ERROR 1452 (23000): Cannot add or update a child row: a foreign key constraint fails (`x15triggers`.`logtable`, CONSTRAINT `logtable_ibfk_1` FOREIGN KEY (`id`) REFERENCES `achieves` (`id`))
+MariaDB [x15triggers]> insert into logtable (course, id, oldrevised) values ('dbxml', 1, '2018-11-13 22:16:39')$$
+Query OK, 0 rows affected (0.00 sec)
+
+MariaDB [x15triggers]> INSERT INTO `logtable` (`lid`, `course`, `id`, `comment`, `oldrevised`, `newrevised`) VALUES (NULL, 'dbxml', '1', '', '2018-11-13 22:16:39', CURRENT_TIMESTAMP)$$
+Query OK, 1 row affected (0.07 sec)
+
+MariaDB [x15triggers]> drop trigger x15
+    -> $$
+Query OK, 0 rows affected (0.01 sec)
+
+MariaDB [x15triggers]> create trigger x15
+    -> before insert on logtable
+    -> for each row
+    -> begin
+    ->    set @comment = 'Student grade was updated';
+    -> end;$$
+Query OK, 0 rows affected (0.08 sec)
+
+MariaDB [x15triggers]> INSERT INTO `logtable` (`lid`, `course`, `id`, `comment`, `oldrevised`, `newrevised`) VALUES (NULL, 'dbxml', '1', '', '2018-11-13 22:16:39', CURRENT_TIMESTAMP)$$
+Query OK, 1 row affected (0.10 sec)
+
+MariaDB [x15triggers]> drop trigger x16
+    -> $$
+ERROR 1360 (HY000): Trigger does not exist
+MariaDB [x15triggers]> drop trigger x15$$
+Query OK, 0 rows affected (0.00 sec)
+
+MariaDB [x15triggers]> create trigger x15
+    -> before insert on logtable
+    -> for each row
+    -> begin
+    ->    set @comment = 'Student grade was updated';
+    -> end;$$
+Query OK, 0 rows affected (0.12 sec)
+
+MariaDB [x15triggers]> INSERT INTO `logtable` (`lid`, `course`, `id`, `oldrevised`, `newrevised`) VALUES (NULL, 'dbxml', '1', '2018-11-13 22:16:39', CURRENT_TIMESTAMP)$$
+Query OK, 0 rows affected (0.00 sec)
+
+MariaDB [x15triggers]> INSERT INTO `logtable` (`lid`, `course`, `id`, `comment`, `oldrevised`, `newrevised`) VALUES (NULL, 'dbxml', '1', '', '2018-11-13 22:16:39', CURRENT_TIMESTAMP)$$
+Query OK, 1 row affected (0.07 sec)
+
+MariaDB [x15triggers]> INSERT INTO `logtable` (`lid`, `course`, `id`,`oldrevised`, `newrevised`) VALUES (NULL, 'dbxml', '1', '2018-11-13 22:16:39', CURRENT_TIMESTAMP)$$
+Query OK, 0 rows affected (0.00 sec)
+
+MariaDB [x15triggers]> drop trigger x15
+    -> $$
+Query OK, 0 rows affected (0.01 sec)
+
+MariaDB [x15triggers]> create trigger x15
+    -> after insert on logtable
+    -> for each row
+    -> begin
+    ->    set @comment = 'Student grade was updated';
+    -> end;$$
+Query OK, 0 rows affected (0.32 sec)
+
+MariaDB [x15triggers]> INSERT INTO `logtable` (`lid`, `course`, `id`,`oldrevised`, `newrevised`) VALUES (NULL, 'dbxml', '1', '2018-11-13 22:16:39', CURRENT_TIMESTAMP)$$
+Query OK, 1 row affected, 1 warning (0.08 sec)
+
+MariaDB [x15triggers]> select @comment, logtable.* from logtable$$
++---------------------------+-----+--------+----+---------+---------------------+---------------------+
+| @comment                  | lid | course | id | comment | oldrevised          | newrevised          |
++---------------------------+-----+--------+----+---------+---------------------+---------------------+
+| Student grade was updated |   4 | dbxml  |  1 |         | 2018-11-13 22:16:39 | 2018-11-13 23:43:14 |
++---------------------------+-----+--------+----+---------+---------------------+---------------------+
+1 row in set (0.29 sec)
+
+MariaDB [x15triggers]> drop trigger x125
+    -> drop trigger x15$$
+ERROR 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'drop trigger x15' at line 2
+MariaDB [x15triggers]> drop trigger x15$$
+Query OK, 0 rows affected (0.01 sec)
+
+MariaDB [x15triggers]> create trigger x15
+    -> after insert on logtable
+    -> for each row
+    -> begin
+    ->    set @x = 'Trigger activated';
+    ->    set new.comment = 'Comment updated';
+    -> end;$$
+ERROR 1362 (HY000): Updating of NEW row is not allowed in after trigger
+MariaDB [x15triggers]> drop trigger x15$$
+ERROR 1360 (HY000): Trigger does not exist
+MariaDB [x15triggers]> create trigger x15
+    -> before insert on logtable
+    -> for each row
+    -> begin
+    ->    set @x = 'Trigger activated';
+    ->    set new.comment = 'Comment updated';
+    -> end;$$
+Query OK, 0 rows affected (0.32 sec)
+
+MariaDB [x15triggers]> INSERT INTO `logtable` (`lid`, `course`, `id`,`oldrevised`, `newrevised`) VALUES (NULL, 'dbxml', '1', '2018-11-13 22:16:39', CURRENT_TIMESTAMP)$$
+Query OK, 1 row affected (0.07 sec)
+
+MariaDB [x15triggers]> select @comment, logtable.* from logtable$$
++---------------------------+-----+--------+----+-----------------+---------------------+---------------------+
+| @comment                  | lid | course | id | comment         | oldrevised          | newrevised          |
++---------------------------+-----+--------+----+-----------------+---------------------+---------------------+
+| Student grade was updated |   5 | dbxml  |  1 | Comment updated | 2018-11-13 22:16:39 | 2018-11-13 23:54:56 |
++---------------------------+-----+--------+----+-----------------+---------------------+---------------------+
+1 row in set (0.00 sec)
+
+MariaDB [x15triggers]> select @x, logtable.* from logtable$$
++-------------------+-----+--------+----+-----------------+---------------------+---------------------+
+| @x                | lid | course | id | comment         | oldrevised          | newrevised          |
++-------------------+-----+--------+----+-----------------+---------------------+---------------------+
+| Trigger activated |   5 | dbxml  |  1 | Comment updated | 2018-11-13 22:16:39 | 2018-11-13 23:54:56 |
++-------------------+-----+--------+----+-----------------+---------------------+---------------------+
+1 row in set (0.00 sec)
+
+MariaDB [x15triggers]>
